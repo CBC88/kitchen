@@ -6,10 +6,12 @@ geometry** (not messy meshes), and — as later steps land — you'll add labell
 cabinets/appliances, mark them fixed or removable, and drop in furniture models
 to see how they fit.
 
-> **Where this is up to:** Step 2 — add solid **items** (cabinets/appliances) to
-> the room: select, name, set type, mark fixed/removable, resize, rotate, drag to
-> position, delete. Plus a **wall-photo backdrop** you can trace your cabinets
-> over (no AI — you interpret the photo, the app shows it in the room to scale).
+> **Where this is up to:** Step 2 — a real room shape (**sloped ceiling**, plus a
+> **door** and **window** cut as clean openings) with solid **items**
+> (cabinets/appliances) you can add, select, name, type, mark fixed/removable,
+> resize, rotate, and **move with grid + wall snapping**. Plus a **wall-photo
+> backdrop** you can trace over (no AI — you interpret the photo, the app shows
+> it in the room to scale).
 
 ## View it on your phone
 
@@ -31,8 +33,11 @@ python3 -m http.server 8000
 
 ## How to use
 
-1. Enter **Length**, **Width**, **Height** in metres → **Build room**.
-   Drag to orbit · pinch to zoom · two-finger drag to pan.
+1. Set up the room → **Build room**. As well as **Length / Width / Height**, you
+   can turn on a **sloped ceiling** (give the low-end height and which way it
+   slopes down) and add a **door** and a **window** — each on the Back, Left, or
+   Right wall, with its own size and position (the front is left open so you can
+   see in). Drag to orbit · pinch to zoom · two-finger drag to pan.
 2. Tap **＋ Add item** and pick from the presets (base/sink/wall cabinet, oven,
    hob, **fridge**, **dishwasher**, worktop, tall unit…). It drops into the
    middle of the room.
