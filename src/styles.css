@@ -1,0 +1,137 @@
+:root {
+  --bg: #1b1e23;
+  --panel: rgba(28, 32, 38, 0.92);
+  --fg: #eef1f5;
+  --muted: #9aa4b2;
+  --accent: #4c9aff;
+  --line: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overscroll-behavior: none;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none; /* let Three.js own the gestures */
+}
+
+/* Setup panel */
+.panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(340px, calc(100vw - 32px));
+  padding: 22px 20px 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  z-index: 10;
+}
+
+.panel h1 {
+  margin: 0 0 2px;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.tagline {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.field span {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.field input {
+  width: 96px;
+  padding: 10px 12px;
+  font-size: 16px; /* 16px avoids iOS zoom-on-focus */
+  text-align: right;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+}
+
+.field input:focus { border-color: var(--accent); }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+#build {
+  width: 100%;
+  margin-top: 6px;
+  padding: 13px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 12px;
+}
+
+#build:active { transform: translateY(1px); }
+
+.hint {
+  margin: 12px 2px 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* HUD after build */
+.hud {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  z-index: 10;
+  font-size: 13px;
+}
+
+.ghost {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+}
+
+.hidden { display: none !important; }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1b1e23" />
+  <title>Kitchen Planner</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+  <!-- Three.js loaded as ES modules from a CDN. Works when served over http(s),
+       e.g. via GitHub Pages. See README for how to view this on your phone. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- Setup panel: enter room dimensions -->
+  <div id="panel" class="panel">
+    <h1>Kitchen Planner</h1>
+    <p class="tagline">Step 1 — build your room from tape-measure sizes.</p>
+
+    <label class="field">
+      <span>Length (m)</span>
+      <input id="length" type="number" inputmode="decimal" min="0.5" max="20" step="0.1" value="3.6" />
+    </label>
+
+    <label class="field">
+      <span>Width (m)</span>
+      <input id="width" type="number" inputmode="decimal" min="0.5" max="20" step="0.1" value="2.8" />
+    </label>
+
+    <label class="field">
+      <span>Height (m)</span>
+      <input id="height" type="number" inputmode="decimal" min="1.8" max="4" step="0.1" value="2.4" />
+    </label>
+
+    <button id="build">Build room</button>
+    <p class="hint">Drag to orbit · pinch to zoom · two-finger drag to pan</p>
+  </div>
+
+  <!-- Floating readout + reset, shown after the room is built -->
+  <div id="hud" class="hud hidden">
+    <span id="readout"></span>
+    <button id="edit" class="ghost">Edit sizes</button>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
