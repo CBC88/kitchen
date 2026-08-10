@@ -6,8 +6,10 @@ geometry** (not messy meshes), and — as later steps land — you'll add labell
 cabinets/appliances, mark them fixed or removable, and drop in furniture models
 to see how they fit.
 
-> **Where this is up to:** Step 1 — build a scaled 3D room from length × width ×
-> height. This is the foundation the rest is built on.
+> **Where this is up to:** Step 2 — add solid **items** (cabinets/appliances) to
+> the room: select, name, set type, mark fixed/removable, resize, rotate, drag to
+> position, delete. Plus a **wall-photo backdrop** you can trace your cabinets
+> over (no AI — you interpret the photo, the app shows it in the room to scale).
 
 ## View it on your phone
 
@@ -27,11 +29,25 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-## How to use (Step 1)
+## How to use
 
-- Enter **Length**, **Width** and **Height** in metres and tap **Build room**.
-- **Drag** to orbit · **pinch** to zoom · **two-finger drag** to pan.
-- Tap **Edit sizes** to change the dimensions and rebuild.
+1. Enter **Length**, **Width**, **Height** in metres → **Build room**.
+   Drag to orbit · pinch to zoom · two-finger drag to pan.
+2. Tap **＋ Add item** to drop in a cabinet. Tap it to select; the panel lets you
+   set its **name**, **type**, **fixed/removable**, **size** (cm), **height off
+   floor**, **rotation**, or **delete** it. **Drag** the item across the floor to
+   position it.
+3. Tap **🖼 Wall photo** → **Choose a photo** of one wall, pick which wall it's
+   on, set opacity, then trace by dragging items over it.
+4. Tap **Edit sizes** to change the room and rebuild.
+
+### Tracing from a photo — what it can and can't do
+
+A single wall photo is a flat **front view**: it gives you widths and heights,
+but **not depth** (use standard sizes — base units are ~60 cm deep — or your tape
+measure). Take the photo **straight-on**; the app doesn't correct perspective.
+Knowing automatically that "this is an oven" would need AI and isn't part of this
+step — here, *you* read the photo and place the boxes.
 
 ## Design notes
 
@@ -46,14 +62,16 @@ python3 -m http.server 8000
 ## Roadmap
 
 1. ✅ **Room shell** — scaled 3D room from dimensions.
-2. **Blocks** — add/move/resize solid boxes; select, label, set fixed vs.
-   removable, delete. (A usable planner on its own.)
-3. **Save / load** a layout.
+2. ✅ **Items** — add/move/resize/rotate solid boxes; select, name, type, set
+   fixed vs. removable, delete. **+ wall-photo backdrop** to trace against.
+3. **Save / load** a layout (so your work survives a refresh).
 4. **Furniture import** — load `.glb`/`.obj` models (the "IKEA" path via file
    import) and place/scale them.
-5. *(Optional)* Photo backdrop to trace against.
-6. *(Research spike)* Photogrammetry from photos — deliberately last, because
-   turning a few phone photos into clean solids is the hard, risky part.
+5. *(Optional, later)* Smarter photo help — perspective correction, or
+   classic-CV rectangle suggestions.
+6. *(Research spike)* Full photogrammetry / AI object recognition — deliberately
+   last, because turning a few phone photos into clean, labelled solids is the
+   hard, risky part.
 
 ## Tech
 

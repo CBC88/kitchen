@@ -6,50 +6,96 @@
   <meta name="theme-color" content="#1b1e23" />
   <title>Kitchen Planner</title>
   <link rel="stylesheet" href="./src/styles.css" />
-  <!-- Three.js loaded as ES modules from a CDN. Works when served over http(s),
-       e.g. via GitHub Pages. See README for how to view this on your phone. -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-    }
-  }
-  </script>
+  <!-- Three.js as UMD globals from a CDN. Works when served over http(s),
+       e.g. GitHub Pages. The exact same app.js also powers the offline preview. -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.5/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.5/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-  <canvas id="scene"></canvas>
+<!-- APP-BODY-START -->
+<canvas id="scene"></canvas>
 
-  <!-- Setup panel: enter room dimensions -->
-  <div id="panel" class="panel">
-    <h1>Kitchen Planner</h1>
-    <p class="tagline">Step 1 — build your room from tape-measure sizes.</p>
+<!-- Setup: room dimensions -->
+<div id="panel" class="panel">
+  <h1>Kitchen Planner</h1>
+  <p class="tagline">Step 2 — room, then add cabinets &amp; appliances.</p>
+  <label class="field"><span>Length (m)</span>
+    <input id="length" type="number" inputmode="decimal" min="0.5" max="20" step="0.1" value="3.6" /></label>
+  <label class="field"><span>Width (m)</span>
+    <input id="width" type="number" inputmode="decimal" min="0.5" max="20" step="0.1" value="2.8" /></label>
+  <label class="field"><span>Height (m)</span>
+    <input id="height" type="number" inputmode="decimal" min="1.8" max="4" step="0.1" value="2.4" /></label>
+  <button id="build">Build room</button>
+  <p class="hint">Drag to orbit · pinch to zoom · two-finger drag to pan</p>
+</div>
 
-    <label class="field">
-      <span>Length (m)</span>
-      <input id="length" type="number" inputmode="decimal" min="0.5" max="20" step="0.1" value="3.6" />
-    </label>
+<!-- Bottom-left readout -->
+<div id="hud" class="hud hidden">
+  <span id="readout"></span>
+  <button id="edit" class="ghost">Edit sizes</button>
+</div>
 
-    <label class="field">
-      <span>Width (m)</span>
-      <input id="width" type="number" inputmode="decimal" min="0.5" max="20" step="0.1" value="2.8" />
-    </label>
+<!-- Bottom toolbar -->
+<div id="toolbar" class="toolbar hidden">
+  <button id="addBtn" class="tool primary">＋ Add item</button>
+  <button id="photoBtn" class="tool">🖼 Wall photo</button>
+</div>
 
-    <label class="field">
-      <span>Height (m)</span>
-      <input id="height" type="number" inputmode="decimal" min="1.8" max="4" step="0.1" value="2.4" />
-    </label>
-
-    <button id="build">Build room</button>
-    <p class="hint">Drag to orbit · pinch to zoom · two-finger drag to pan</p>
+<!-- Inspector bottom-sheet for the selected item -->
+<div id="inspector" class="sheet hidden">
+  <div class="sheet-head">
+    <strong id="insTitle">Item</strong>
+    <button id="insClose" class="ghost">Done</button>
   </div>
-
-  <!-- Floating readout + reset, shown after the room is built -->
-  <div id="hud" class="hud hidden">
-    <span id="readout"></span>
-    <button id="edit" class="ghost">Edit sizes</button>
+  <label class="row"><span>Name</span>
+    <input id="insName" type="text" /></label>
+  <label class="row"><span>Type</span>
+    <select id="insType"></select></label>
+  <div class="row"><span>Status</span>
+    <div class="seg" id="insFixed">
+      <button data-v="fixed">Fixed</button>
+      <button data-v="removable">Removable</button>
+    </div>
   </div>
+  <div class="row triple"><span>Size (cm)</span>
+    <div class="nums">
+      <input id="insW" type="number" inputmode="numeric" min="5" max="600" step="1" title="Width" />
+      <input id="insD" type="number" inputmode="numeric" min="5" max="600" step="1" title="Depth" />
+      <input id="insH" type="number" inputmode="numeric" min="1" max="300" step="1" title="Height" />
+    </div>
+  </div>
+  <label class="row"><span>Off floor (cm)</span>
+    <input id="insElev" type="number" inputmode="numeric" min="0" max="250" step="1" /></label>
+  <label class="row"><span>Rotate</span>
+    <input id="insRot" type="range" min="0" max="359" step="1" value="0" /></label>
+  <button id="insDelete" class="danger">Delete item</button>
+  <p class="hint">Tip: drag the item across the floor to position it.</p>
+</div>
 
-  <script type="module" src="./src/main.js"></script>
+<!-- Photo bottom-sheet -->
+<div id="photoPanel" class="sheet hidden">
+  <div class="sheet-head">
+    <strong>Wall photo</strong>
+    <button id="photoClose" class="ghost">Done</button>
+  </div>
+  <button id="photoChoose" class="tool primary wide">Choose a photo…</button>
+  <div class="row"><span>On wall</span>
+    <div class="seg" id="photoWall">
+      <button data-v="back">Back</button>
+      <button data-v="left">Left</button>
+      <button data-v="right">Right</button>
+    </div>
+  </div>
+  <label class="row"><span>Opacity</span>
+    <input id="photoOpacity" type="range" min="0.1" max="1" step="0.05" value="0.85" /></label>
+  <button id="photoRemove" class="danger">Remove photo</button>
+  <p class="hint">Take it straight-on for best results. Then add items and drag
+    them over the photo to trace your cabinets.</p>
+</div>
+
+<input id="photoFile" type="file" accept="image/*" hidden />
+<!-- APP-BODY-END -->
+
+<script src="./src/app.js"></script>
 </body>
 </html>
