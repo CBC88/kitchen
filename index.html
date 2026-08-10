@@ -41,12 +41,34 @@
   <button id="photoBtn" class="tool">🖼 Wall photo</button>
 </div>
 
+<!-- Compact bar shown while moving an item -->
+<div id="moveBar" class="movebar hidden">
+  <span id="moveLabel">Moving</span>
+  <div class="seg" id="snapSeg">
+    <button data-v="on" class="on">Snap</button>
+    <button data-v="off">Free</button>
+  </div>
+  <button id="moveDone" class="tool primary">Done</button>
+</div>
+
+<!-- Add-item picker -->
+<div id="addSheet" class="sheet hidden">
+  <div class="sheet-head">
+    <strong>Add item</strong>
+    <button id="addClose" class="ghost">Close</button>
+  </div>
+  <div class="chips" id="addChips"></div>
+  <p class="hint">It drops into the middle — tap it, then <b>Move</b> to slide it
+    into place (it snaps to the grid and walls).</p>
+</div>
+
 <!-- Inspector bottom-sheet for the selected item -->
 <div id="inspector" class="sheet hidden">
   <div class="sheet-head">
     <strong id="insTitle">Item</strong>
     <button id="insClose" class="ghost">Done</button>
   </div>
+  <button id="insMove" class="tool primary wide">✥ Move — drag to reposition</button>
   <label class="row"><span>Name</span>
     <input id="insName" type="text" /></label>
   <label class="row"><span>Type</span>

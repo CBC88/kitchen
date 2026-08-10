@@ -33,13 +33,18 @@ python3 -m http.server 8000
 
 1. Enter **Length**, **Width**, **Height** in metres → **Build room**.
    Drag to orbit · pinch to zoom · two-finger drag to pan.
-2. Tap **＋ Add item** to drop in a cabinet. Tap it to select; the panel lets you
-   set its **name**, **type**, **fixed/removable**, **size** (cm), **height off
-   floor**, **rotation**, or **delete** it. **Drag** the item across the floor to
-   position it.
-3. Tap **🖼 Wall photo** → **Choose a photo** of one wall, pick which wall it's
-   on, set opacity, then trace by dragging items over it.
-4. Tap **Edit sizes** to change the room and rebuild.
+2. Tap **＋ Add item** and pick from the presets (base/sink/wall cabinet, oven,
+   hob, **fridge**, **dishwasher**, worktop, tall unit…). It drops into the
+   middle of the room.
+3. **Tap an item** to select it. The panel lets you change its **name**, **type**,
+   **fixed/removable**, **size** (cm), **height off floor**, **rotation**, or
+   **delete** it.
+4. To reposition, tap **✥ Move** — you're now in *move mode*: drag the item across
+   the floor and it **snaps to a 5 cm grid and flush to the walls** (toggle
+   **Snap/Free** in the bar). Tap **Done** when it's in place.
+5. Tap **🖼 Wall photo** → **Choose a photo** of one wall, pick which wall it's
+   on, set opacity, then trace by moving items over it.
+6. Tap **Edit sizes** to change the room and rebuild.
 
 ### Tracing from a photo — what it can and can't do
 
