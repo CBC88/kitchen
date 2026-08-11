@@ -628,10 +628,12 @@
   // shelf wall) is left blank for new furniture.
   function premodel() {
     // Reflect the room params in the panel so Edit room shows/edits them.
+    // Slope runs along the length: full height at the window (back/high) end,
+    // sloping down toward the door end. Flat for 1.17 m from the window wall.
     $('length').value = 3.25; $('width').value = 1.85; $('height').value = 2.405;
-    $('slopeOn').checked = true; $('slopeLow').value = 1.35; $('slopeFlat').value = 117; setSeg('slopeDir', 'front');
-    $('doorOn').checked = true; setSeg('doorWall', 'right'); $('doorW').value = 80; $('doorH').value = 200; $('doorPos').value = 35;
-    $('winOn').checked = true; setSeg('winWall', 'left'); $('winW').value = 110; $('winH').value = 91; $('winSill').value = 90; $('winPos').value = 35;
+    $('slopeOn').checked = true; $('slopeLow').value = 1.90; $('slopeFlat').value = 117; setSeg('slopeDir', 'right');
+    $('doorOn').checked = true; setSeg('doorWall', 'right'); $('doorW').value = 80; $('doorH').value = 190; $('doorPos').value = 50;
+    $('winOn').checked = true; setSeg('winWall', 'left'); $('winW').value = 110; $('winH').value = 91; $('winSill').value = 90; $('winPos').value = 50;
     ['slopeOpts', 'doorOpts', 'winOpts'].forEach((id) => $(id).classList.remove('hidden'));
 
     build(); // reads the panel → builds the room, hides panel, shows HUD/toolbar
@@ -649,10 +651,11 @@
     createItem('fridge',     { x:  1.2, z: zFridge, fixed: true, name: 'Fridge' });
     // Worktop across the base units (not the fridge).
     createItem('worktop',    { x: -0.3, z: zTop, w: 2.4, fixed: true, name: 'Worktop' });
-    // A few wall cabinets above.
-    createItem('wall', { x: -0.9, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet' });
-    createItem('wall', { x: -0.3, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 2' });
-    createItem('wall', { x:  0.6, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 3' });
+    // A few wall cabinets above — kept toward the high (window) end so they
+    // clear the sloping ceiling.
+    createItem('wall', { x: -1.2, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet' });
+    createItem('wall', { x: -0.6, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 2' });
+    createItem('wall', { x:  0.0, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 3' });
   }
 
   // ---- Resize + render loop ------------------------------------------------
