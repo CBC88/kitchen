@@ -62,7 +62,7 @@
 
   // ---- Room ----------------------------------------------------------------
   let room = { L: 3.6, W: 2.8, H: 2.4 };
-  let slopeCfg = { on: false, low: 2.0, dir: 'right' };
+  let slopeCfg = { on: false, low: 2.0, flat: 0, dir: 'right' };
   let roomGroup = null;
   let roomWalls = [];      // { group, n(normal), p(point) } for camera-facing auto-hide
   let ceilMeshRef = null;
@@ -75,15 +75,23 @@
   const lerp = (a, b, t) => a + (b - a) * t;
 
   // Height of the (possibly sloped) ceiling at a plan position.
+  // The ceiling is flat/full-height near the "high" wall for `flat` metres,
+  // then slopes down to `low` at the opposite ("low") wall. t runs 0 (high) → 1 (low).
   function ceilingHeight(x, z) {
     const { L, W, H } = room;
     if (!slopeCfg.on) return H;
     const lo = slopeCfg.low;
-    if (slopeCfg.dir === 'left')  return lerp(lo, H, (x + L / 2) / L); // low at x=-L/2
-    if (slopeCfg.dir === 'right') return lerp(H, lo, (x + L / 2) / L); // low at x=+L/2
-    if (slopeCfg.dir === 'back')  return lerp(lo, H, (z + W / 2) / W); // low at z=-W/2
-    if (slopeCfg.dir === 'front') return lerp(H, lo, (z + W / 2) / W); // low at z=+W/2
-    return H;
+    let t, axisLen;
+    switch (slopeCfg.dir) {
+      case 'front': t = (z + W / 2) / W; axisLen = W; break; // low at front (z=+W/2)
+      case 'back':  t = (W / 2 - z) / W; axisLen = W; break; // low at back  (z=-W/2)
+      case 'right': t = (x + L / 2) / L; axisLen = L; break; // low at right (x=+L/2)
+      case 'left':  t = (L / 2 - x) / L; axisLen = L; break; // low at left  (x=-L/2)
+      default: return H;
+    }
+    const ff = axisLen > 0 ? Math.min(0.98, Math.max(0, (slopeCfg.flat || 0) / axisLen)) : 0;
+    if (t <= ff) return H;
+    return lerp(H, lo, (t - ff) / (1 - ff));
   }
 
   // Build one wall (as a solid) from plan point A→B, following the ceiling for
@@ -441,7 +449,7 @@
     if (![L, W, H].every(isFinite)) return;
     const cfg = {
       L, W, H,
-      slope: { on: $('slopeOn').checked, low: clamp(num('slopeLow'), 1.2, H), dir: readSeg('slopeDir') || 'right' },
+      slope: { on: $('slopeOn').checked, low: clamp(num('slopeLow'), 0.3, H), flat: clamp(num('slopeFlat'), 0, 600) / 100, dir: readSeg('slopeDir') || 'right' },
       door: {
         on: $('doorOn').checked, wall: readSeg('doorWall') || 'left',
         width: clamp(num('doorW'), 40, 200) / 100, height: clamp(num('doorH'), 100, 260) / 100,
@@ -620,10 +628,10 @@
   // shelf wall) is left blank for new furniture.
   function premodel() {
     // Reflect the room params in the panel so Edit room shows/edits them.
-    $('length').value = 3.0; $('width').value = 1.8; $('height').value = 2.405;
-    $('slopeOn').checked = true; $('slopeLow').value = 1.4; setSeg('slopeDir', 'front');
-    $('doorOn').checked = true; setSeg('doorWall', 'right'); $('doorW').value = 80; $('doorH').value = 200; $('doorPos').value = 50;
-    $('winOn').checked = true; setSeg('winWall', 'left'); $('winW').value = 110; $('winH').value = 130; $('winSill').value = 90; $('winPos').value = 55;
+    $('length').value = 3.25; $('width').value = 1.85; $('height').value = 2.405;
+    $('slopeOn').checked = true; $('slopeLow').value = 1.35; $('slopeFlat').value = 117; setSeg('slopeDir', 'front');
+    $('doorOn').checked = true; setSeg('doorWall', 'right'); $('doorW').value = 80; $('doorH').value = 200; $('doorPos').value = 35;
+    $('winOn').checked = true; setSeg('winWall', 'left'); $('winW').value = 110; $('winH').value = 91; $('winSill').value = 90; $('winPos').value = 35;
     ['slopeOpts', 'doorOpts', 'winOpts'].forEach((id) => $(id).classList.remove('hidden'));
 
     build(); // reads the panel → builds the room, hides panel, shows HUD/toolbar
