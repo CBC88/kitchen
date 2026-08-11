@@ -36,8 +36,9 @@
     <div class="field"><span>Slopes down toward</span>
       <div class="seg" id="slopeDir">
         <button data-v="left">Left</button>
-        <button data-v="right" class="on">Right</button>
+        <button data-v="right">Right</button>
         <button data-v="back">Back</button>
+        <button data-v="front" class="on">Front</button>
       </div></div>
   </div>
 
@@ -46,9 +47,10 @@
   <div id="doorOpts">
     <div class="field"><span>On wall</span>
       <div class="seg" id="doorWall">
-        <button data-v="left" class="on">Left</button>
-        <button data-v="right">Right</button>
+        <button data-v="left">Left</button>
+        <button data-v="right" class="on">Right</button>
         <button data-v="back">Back</button>
+        <button data-v="front">Front</button>
       </div></div>
     <label class="field"><span>Width (cm)</span>
       <input id="doorW" type="number" inputmode="numeric" min="40" max="200" step="1" value="80" /></label>
@@ -63,9 +65,10 @@
   <div id="winOpts">
     <div class="field"><span>On wall</span>
       <div class="seg" id="winWall">
-        <button data-v="left">Left</button>
-        <button data-v="right" class="on">Right</button>
+        <button data-v="left" class="on">Left</button>
+        <button data-v="right">Right</button>
         <button data-v="back">Back</button>
+        <button data-v="front">Front</button>
       </div></div>
     <label class="field"><span>Width (cm)</span>
       <input id="winW" type="number" inputmode="numeric" min="30" max="300" step="1" value="100" /></label>
@@ -78,7 +81,7 @@
   </div>
 
   <button id="build">Build room</button>
-  <p class="hint">The front is left open so you can see in. Drag to orbit · pinch to zoom.</p>
+  <p class="hint">Walls between you and the room fade away as you orbit. Drag to orbit · pinch to zoom.</p>
 </div>
 
 <!-- Bottom-left readout -->

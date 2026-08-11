@@ -64,6 +64,8 @@
   let room = { L: 3.6, W: 2.8, H: 2.4 };
   let slopeCfg = { on: false, low: 2.0, dir: 'right' };
   let roomGroup = null;
+  let roomWalls = [];      // { group, n(normal), p(point) } for camera-facing auto-hide
+  let ceilMeshRef = null;
   const WALLT = 0.06; // wall thickness (m)
   const wallMat = new THREE.MeshStandardMaterial({ color: 0xe7e9ee, roughness: 1.0, side: THREE.DoubleSide });
   const floorMat = new THREE.MeshStandardMaterial({ color: 0xb9a98f, roughness: 0.95 });
@@ -80,6 +82,7 @@
     if (slopeCfg.dir === 'left')  return lerp(lo, H, (x + L / 2) / L); // low at x=-L/2
     if (slopeCfg.dir === 'right') return lerp(H, lo, (x + L / 2) / L); // low at x=+L/2
     if (slopeCfg.dir === 'back')  return lerp(lo, H, (z + W / 2) / W); // low at z=-W/2
+    if (slopeCfg.dir === 'front') return lerp(H, lo, (z + W / 2) / W); // low at z=+W/2
     return H;
   }
 
@@ -169,20 +172,28 @@
     ceil.receiveShadow = true;
     roomGroup.add(ceil);
 
+    ceilMeshRef = ceil;
+
     // Distribute the door/window onto their walls.
-    const byWall = { back: { doors: [], windows: [] }, left: { doors: [], windows: [] }, right: { doors: [], windows: [] } };
-    const wallLen = (name) => (name === 'back' ? L : W);
+    const byWall = { back: { d: [], w: [] }, front: { d: [], w: [] }, left: { d: [], w: [] }, right: { d: [], w: [] } };
+    const wallLen = (name) => (name === 'back' || name === 'front' ? L : W);
     if (cfg.door.on && byWall[cfg.door.wall]) {
-      byWall[cfg.door.wall].doors.push({ u: cfg.door.pos * wallLen(cfg.door.wall), width: cfg.door.width, height: cfg.door.height });
+      byWall[cfg.door.wall].d.push({ u: cfg.door.pos * wallLen(cfg.door.wall), width: cfg.door.width, height: cfg.door.height });
     }
     if (cfg.window.on && byWall[cfg.window.wall]) {
-      byWall[cfg.window.wall].windows.push({ u: cfg.window.pos * wallLen(cfg.window.wall), width: cfg.window.width, height: cfg.window.height, sill: cfg.window.sill });
+      byWall[cfg.window.wall].w.push({ u: cfg.window.pos * wallLen(cfg.window.wall), width: cfg.window.width, height: cfg.window.height, sill: cfg.window.sill });
     }
 
-    // Back (long), Left & Right (short). Front stays open for viewing.
-    roomGroup.add(makeWall(-L / 2, -W / 2, L / 2, -W / 2, byWall.back.doors, byWall.back.windows));
-    roomGroup.add(makeWall(-L / 2, W / 2, -L / 2, -W / 2, byWall.left.doors, byWall.left.windows));
-    roomGroup.add(makeWall(L / 2, -W / 2, L / 2, W / 2, byWall.right.doors, byWall.right.windows));
+    // Four walls (A→B chosen so each wall's thickness sits inside the room).
+    roomWalls = [];
+    const addWall = (grp, nx, nz, px, pz) => {
+      roomWalls.push({ group: grp, n: new THREE.Vector3(nx, 0, nz), p: new THREE.Vector3(px, H / 2, pz) });
+      roomGroup.add(grp);
+    };
+    addWall(makeWall(-L / 2, -W / 2, L / 2, -W / 2, byWall.back.d, byWall.back.w), 0, -1, 0, -W / 2);  // back
+    addWall(makeWall(L / 2, W / 2, -L / 2, W / 2, byWall.front.d, byWall.front.w), 0, 1, 0, W / 2);      // front
+    addWall(makeWall(-L / 2, W / 2, -L / 2, -W / 2, byWall.left.d, byWall.left.w), -1, 0, -L / 2, 0);    // left
+    addWall(makeWall(L / 2, -W / 2, L / 2, W / 2, byWall.right.d, byWall.right.w), 1, 0, L / 2, 0);       // right
     scene.add(roomGroup);
 
     const r = Math.max(L, W);
@@ -203,9 +214,15 @@
   let selBox = null;
   const counters = {};
 
-  function addItem(typeKey) {
+  // Create an item, optionally with explicit size/position/name (used for the
+  // pre-model). Does not select — callers decide.
+  function createItem(typeKey, opts) {
+    opts = opts || {};
     const T = TYPES[typeKey] || TYPES.other;
-    const [w, d, h] = T.size;
+    const w = opts.w != null ? opts.w : T.size[0];
+    const d = opts.d != null ? opts.d : T.size[1];
+    const h = opts.h != null ? opts.h : T.size[2];
+    const elev = opts.elev != null ? opts.elev : T.elevation;
     counters[typeKey] = (counters[typeKey] || 0) + 1;
 
     const mesh = new THREE.Mesh(
@@ -216,20 +233,22 @@
     mesh.receiveShadow = true;
 
     const it = {
-      mesh, type: typeKey, fixed: false,
-      name: counters[typeKey] > 1 ? `${T.label} ${counters[typeKey]}` : T.label,
-      w, d, h, elev: T.elevation, rot: 0,
+      mesh, type: typeKey, fixed: !!opts.fixed,
+      name: opts.name || (counters[typeKey] > 1 ? `${T.label} ${counters[typeKey]}` : T.label),
+      w, d, h, elev, rot: opts.rot || 0,
     };
     mesh.userData.item = it;
     placeMesh(it);
-    mesh.position.x = 0;
-    mesh.position.z = 0;
+    mesh.position.x = opts.x || 0;
+    mesh.position.z = opts.z || 0;
 
     scene.add(mesh);
     items.push(it);
     itemMeshes.push(mesh);
-    select(it);
+    return it;
   }
+
+  function addItem(typeKey) { select(createItem(typeKey, {})); }
 
   function placeMesh(it) {
     it.mesh.geometry.dispose();
@@ -594,6 +613,40 @@
     addSheet.classList.add('hidden');
   }
 
+  // ---- Pre-model: this attic galley kitchen --------------------------------
+  // A starting point built from the photos. Dimensions are estimates (only the
+  // 2.405 m height is measured) — everything is editable via Edit room / tapping
+  // items. The appliance run sits on the back wall; the front wall (your IKEA
+  // shelf wall) is left blank for new furniture.
+  function premodel() {
+    // Reflect the room params in the panel so Edit room shows/edits them.
+    $('length').value = 3.0; $('width').value = 1.8; $('height').value = 2.405;
+    $('slopeOn').checked = true; $('slopeLow').value = 1.4; setSeg('slopeDir', 'front');
+    $('doorOn').checked = true; setSeg('doorWall', 'right'); $('doorW').value = 80; $('doorH').value = 200; $('doorPos').value = 50;
+    $('winOn').checked = true; setSeg('winWall', 'left'); $('winW').value = 110; $('winH').value = 130; $('winSill').value = 90; $('winPos').value = 55;
+    ['slopeOpts', 'doorOpts', 'winOpts'].forEach((id) => $(id).classList.remove('hidden'));
+
+    build(); // reads the panel → builds the room, hides panel, shows HUD/toolbar
+
+    const zBase = -room.W / 2 + WALLT + 0.30;  // base cabinets (60 deep) on back wall
+    const zFridge = -room.W / 2 + WALLT + 0.325; // fridge (65 deep)
+    const zTop = -room.W / 2 + WALLT + 0.31;   // worktop
+    const zWall = -room.W / 2 + WALLT + 0.175; // wall cabinets (35 deep)
+
+    // Appliance run, window end → door end.
+    createItem('sink',       { x: -1.2, z: zBase,   fixed: true, name: 'Sink' });
+    createItem('dishwasher', { x: -0.6, z: zBase,   fixed: true, name: 'Dishwasher' });
+    createItem('oven',       { x:  0.0, z: zBase,   fixed: true, name: 'Oven + hob' });
+    createItem('drawers',    { x:  0.6, z: zBase,   fixed: true, name: 'Drawers' });
+    createItem('fridge',     { x:  1.2, z: zFridge, fixed: true, name: 'Fridge' });
+    // Worktop across the base units (not the fridge).
+    createItem('worktop',    { x: -0.3, z: zTop, w: 2.4, fixed: true, name: 'Worktop' });
+    // A few wall cabinets above.
+    createItem('wall', { x: -0.9, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet' });
+    createItem('wall', { x: -0.3, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 2' });
+    createItem('wall', { x:  0.6, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 3' });
+  }
+
   // ---- Resize + render loop ------------------------------------------------
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -604,8 +657,22 @@
   window.addEventListener('resize', resize);
   resize();
 
+  premodel(); // build the kitchen on load
+
+  // Hide any wall (and the ceiling) sitting between the camera and the room,
+  // so you can always see inside as you orbit — works with touch and mouse.
+  function updateCutaway() {
+    const c = camera.position;
+    for (const w of roomWalls) {
+      const d = w.n.x * (c.x - w.p.x) + w.n.z * (c.z - w.p.z);
+      w.group.visible = d < 0.05;
+    }
+    if (ceilMeshRef) ceilMeshRef.visible = c.y < room.H + 0.15;
+  }
+
   (function tick() {
     controls.update();
+    updateCutaway();
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
   })();

@@ -6,12 +6,17 @@ geometry** (not messy meshes), and — as later steps land — you'll add labell
 cabinets/appliances, mark them fixed or removable, and drop in furniture models
 to see how they fit.
 
-> **Where this is up to:** Step 2 — a real room shape (**sloped ceiling**, plus a
-> **door** and **window** cut as clean openings) with solid **items**
-> (cabinets/appliances) you can add, select, name, type, mark fixed/removable,
-> resize, rotate, and **move with grid + wall snapping**. Plus a **wall-photo
-> backdrop** you can trace over (no AI — you interpret the photo, the app shows
-> it in the room to scale).
+> **Where this is up to:** the app **opens pre-modelled as an attic galley
+> kitchen** — the appliance run (sink · dishwasher · oven+hob · drawers · fridge)
+> on one long wall, wall cabinets above, a sloped ceiling, and a window + door on
+> the short walls; the opposite long wall (the IKEA-shelf wall) is left **blank**
+> for planning new furniture. All of it is **parametric** (Edit room, tap any
+> item). Four walls with **auto-hide** (the wall between you and the room fades as
+> you orbit) so you can see both runs — works with **touch and mouse** (phone and
+> desktop). Plus grid/wall snapping and a wall-photo trace backdrop.
+>
+> The dimensions are **estimates** — only the 2.405 m height is measured. Use a
+> tape and correct Length/Width and the slope's low-end height in **Edit room**.
 
 ## View it on your phone
 
