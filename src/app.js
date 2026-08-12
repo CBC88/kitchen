@@ -77,9 +77,22 @@
   // Height of the (possibly sloped) ceiling at a plan position.
   // The ceiling is flat/full-height near the "high" wall for `flat` metres,
   // then slopes down to `low` at the opposite ("low") wall. t runs 0 (high) → 1 (low).
+  // A dormer carves a raised flat niche near the window so it can be recessed
+  // into the slope.
   function ceilingHeight(x, z) {
     const { L, W, H } = room;
     if (!slopeCfg.on) return H;
+
+    const dm = slopeCfg.dormer;
+    if (dm && dm.on) {
+      let inWall = false, inSpan = false;
+      if (dm.wall === 'left')  { inWall = x <= -L / 2 + dm.depth; inSpan = Math.abs(z - dm.center) <= dm.halfW; }
+      else if (dm.wall === 'right') { inWall = x >= L / 2 - dm.depth; inSpan = Math.abs(z - dm.center) <= dm.halfW; }
+      else if (dm.wall === 'back')  { inWall = z <= -W / 2 + dm.depth; inSpan = Math.abs(x - dm.center) <= dm.halfW; }
+      else if (dm.wall === 'front') { inWall = z >= W / 2 - dm.depth; inSpan = Math.abs(x - dm.center) <= dm.halfW; }
+      if (inWall && inSpan) return dm.ceil;
+    }
+
     const lo = slopeCfg.low;
     let t, axisLen;
     switch (slopeCfg.dir) {
@@ -99,7 +112,8 @@
   // (rectangular holes + a glass pane). Local shape coords: x = along wall, y = up.
   function makeWall(ax, az, bx, bz, doors, windows) {
     const dx = bx - ax, dz = bz - az, len = Math.hypot(dx, dz);
-    const topA = ceilingHeight(ax, az), topB = ceilingHeight(bx, bz);
+    const ux = dx / len, uz = dz / len;
+    const hAt = (u) => ceilingHeight(ax + ux * u, az + uz * u); // ceiling height along the wall
 
     const shape = new THREE.Shape();
     shape.moveTo(0, 0);
@@ -107,13 +121,14 @@
       const u0 = clamp(d.u - d.width / 2, 0.03, len - 0.03);
       const u1 = clamp(d.u + d.width / 2, 0.03, len - 0.03);
       if (u1 <= u0) return;
-      const tmin = Math.min(lerp(topA, topB, u0 / len), lerp(topA, topB, u1 / len));
-      const dh = Math.min(d.height, tmin - 0.05);
+      const dh = Math.min(d.height, Math.min(hAt(u0), hAt(u1)) - 0.05);
+      if (dh <= 0.1) return;
       shape.lineTo(u0, 0); shape.lineTo(u0, dh); shape.lineTo(u1, dh); shape.lineTo(u1, 0);
     });
     shape.lineTo(len, 0);
-    shape.lineTo(len, topB);
-    shape.lineTo(0, topA);
+    // Top edge sampled from B back to A so it follows the slope/dormer exactly.
+    const N = Math.max(2, Math.round(len / 0.05));
+    for (let i = N; i >= 0; i--) shape.lineTo((len * i) / N, hAt((len * i) / N));
     shape.lineTo(0, 0);
 
     const panes = [];
@@ -121,8 +136,8 @@
       const u0 = clamp(w.u - w.width / 2, 0.05, len - 0.05);
       const u1 = clamp(w.u + w.width / 2, 0.05, len - 0.05);
       const y0 = Math.max(0.05, w.sill);
-      const tmid = lerp(topA, topB, w.u / len);
-      const y1 = Math.min(y0 + w.height, tmid - 0.05);
+      const top = Math.min(hAt(u0), hAt(u1), hAt(w.u));
+      const y1 = Math.min(y0 + w.height, top - 0.05);
       if (u1 <= u0 || y1 <= y0) return;
       const hole = new THREE.Path();
       hole.moveTo(u0, y0); hole.lineTo(u1, y0); hole.lineTo(u1, y1); hole.lineTo(u0, y1); hole.lineTo(u0, y0);
@@ -152,6 +167,22 @@
     slopeCfg = cfg.slope;
     const { L, W, H } = room;
 
+    // If the window sits on the wall the slope comes down to, carve a dormer
+    // niche around it so it can be recessed into the slope.
+    slopeCfg.dormer = { on: false };
+    if (cfg.slope.on && cfg.window.on && cfg.window.wall === cfg.slope.dir) {
+      let center;
+      if (cfg.window.wall === 'left') center = W / 2 - cfg.window.pos * W;
+      else if (cfg.window.wall === 'right') center = -W / 2 + cfg.window.pos * W;
+      else if (cfg.window.wall === 'back') center = -L / 2 + cfg.window.pos * L;
+      else center = L / 2 - cfg.window.pos * L;
+      slopeCfg.dormer = {
+        on: true, wall: cfg.window.wall, center,
+        halfW: cfg.window.width / 2 + 0.12, depth: 0.5,
+        ceil: Math.min(H, cfg.window.sill + cfg.window.height + 0.2),
+      };
+    }
+
     if (roomGroup) {
       roomGroup.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
       scene.remove(roomGroup);
@@ -167,14 +198,24 @@
     grid.position.y = 0.002;
     roomGroup.add(grid);
 
-    // Ceiling as a single quad through the four corner heights.
-    const corners = [[-L / 2, -W / 2], [L / 2, -W / 2], [L / 2, W / 2], [-L / 2, W / 2]];
-    const cy = corners.map((c) => ceilingHeight(c[0], c[1]));
+    // Ceiling as a subdivided grid so it follows the slope and dormer recess.
+    const nx = Math.max(2, Math.round(L / 0.1)), nz = Math.max(2, Math.round(W / 0.1));
+    const pos = [], idx = [], rowLen = nz + 1;
+    for (let i = 0; i <= nx; i++) {
+      for (let j = 0; j <= nz; j++) {
+        const x = -L / 2 + (L * i) / nx, z = -W / 2 + (W * j) / nz;
+        pos.push(x, ceilingHeight(x, z), z);
+      }
+    }
+    for (let i = 0; i < nx; i++) {
+      for (let j = 0; j < nz; j++) {
+        const a = i * rowLen + j, b = a + 1, c = (i + 1) * rowLen + j, d = c + 1;
+        idx.push(a, c, b, b, c, d);
+      }
+    }
     const cg = new THREE.BufferGeometry();
-    cg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-      corners[0][0], cy[0], corners[0][1], corners[1][0], cy[1], corners[1][1], corners[2][0], cy[2], corners[2][1],
-      corners[0][0], cy[0], corners[0][1], corners[2][0], cy[2], corners[2][1], corners[3][0], cy[3], corners[3][1],
-    ]), 3));
+    cg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+    cg.setIndex(idx);
     cg.computeVertexNormals();
     const ceil = new THREE.Mesh(cg, ceilMat);
     ceil.receiveShadow = true;
@@ -628,11 +669,12 @@
   // shelf wall) is left blank for new furniture.
   function premodel() {
     // Reflect the room params in the panel so Edit room shows/edits them.
-    // Slope runs along the length: full height at the window (back/high) end,
-    // sloping down toward the door end. Flat for 1.17 m from the window wall.
+    // Slope is only at the window end: 0.90 m high at the window wall, rising
+    // over 1.7 m to full height, then flat to the door. Window recessed (dormer).
+    // Flat length from the high (door) wall = 3.25 − 1.7 = 1.55 m.
     $('length').value = 3.25; $('width').value = 1.85; $('height').value = 2.405;
-    $('slopeOn').checked = true; $('slopeLow').value = 1.90; $('slopeFlat').value = 117; setSeg('slopeDir', 'right');
-    $('doorOn').checked = true; setSeg('doorWall', 'right'); $('doorW').value = 80; $('doorH').value = 190; $('doorPos').value = 50;
+    $('slopeOn').checked = true; $('slopeLow').value = 0.90; $('slopeFlat').value = 155; setSeg('slopeDir', 'left');
+    $('doorOn').checked = true; setSeg('doorWall', 'right'); $('doorW').value = 80; $('doorH').value = 200; $('doorPos').value = 50;
     $('winOn').checked = true; setSeg('winWall', 'left'); $('winW').value = 110; $('winH').value = 91; $('winSill').value = 90; $('winPos').value = 50;
     ['slopeOpts', 'doorOpts', 'winOpts'].forEach((id) => $(id).classList.remove('hidden'));
 
@@ -651,11 +693,11 @@
     createItem('fridge',     { x:  1.2, z: zFridge, fixed: true, name: 'Fridge' });
     // Worktop across the base units (not the fridge).
     createItem('worktop',    { x: -0.3, z: zTop, w: 2.4, fixed: true, name: 'Worktop' });
-    // A few wall cabinets above — kept toward the high (window) end so they
-    // clear the sloping ceiling.
-    createItem('wall', { x: -1.2, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet' });
-    createItem('wall', { x: -0.6, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 2' });
-    createItem('wall', { x:  0.0, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 3' });
+    // Wall cabinets: one low box tucked under the slope near the window, two at
+    // normal height on the high (door) half where the ceiling clears them.
+    createItem('wall', { x: -0.6, z: zWall, elev: 1.00, fixed: true, name: 'Wall box (under slope)' });
+    createItem('wall', { x:  0.0, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet' });
+    createItem('wall', { x:  0.6, z: zWall, elev: 1.45, fixed: true, name: 'Wall cabinet 2' });
   }
 
   // ---- Resize + render loop ------------------------------------------------
